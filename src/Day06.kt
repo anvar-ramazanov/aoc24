@@ -1,7 +1,7 @@
 fun main() {
 
     fun parseMap(input: List<String>): MutableList<List<Char>> {
-        val map = mutableListOf<List<Char>>();
+        val map = mutableListOf<List<Char>>()
         for (line in input) {
             val temp = mutableListOf<Char>()
             for (c in line) {
