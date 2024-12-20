@@ -3,7 +3,7 @@ import java.util.PriorityQueue
 fun main() {
     fun parseToPairSet(input: List<String>): Set<Pair<Int, Int>> {
         return input.map { line ->
-            val (first, second) = line.split(",").map { it.trim().toInt() } // Разбиваем строку и преобразуем в числа
+            val (first, second) = line.split(",").map { it.trim().toInt() }
             Pair(second, first)
         }.toSet()
     }
