@@ -1,4 +1,5 @@
 import java.util.PriorityQueue
+import kotlin.math.abs
 
 fun main() {
     data class Maze(
@@ -37,6 +38,7 @@ fun main() {
         end: Pair<Int, Int>
     ): Set<Pair<Int, Int>> {
         val path = mutableListOf<Pair<Int, Int>>()
+        path.add(end)
         var current = moves[end]
         while (current != null && current != start) {
             path.add(current)
@@ -82,33 +84,20 @@ fun main() {
         return Pair(costMap.getValue(end), path)
     }
 
-    fun getCheats(position: Pair<Int, Int>, path: Set<Pair<Int, Int>>, maze: Maze) : List<Pair<Int, Int>> {
-        var result: MutableList<Pair<Int, Int>> = mutableListOf()
+    fun getCheats(position: Pair<Int, Int>, path: Set<Pair<Int, Int>>, maze: Maze) : List<Pair<Pair<Int, Int>, Pair<Int,Int>>> {
+        var result: MutableList<Pair<Pair<Int, Int>, Pair<Int,Int>>> = mutableListOf()
         val directions = listOf(Pair(0, 1), Pair(0, -1), Pair(1, 0), Pair(-1, 0))
         for (direction in directions) {
             val next = Pair(position.first + direction.first, position.second + direction.second)
             val next2 = Pair(position.first + 2 * direction.first, position.second + 2 * direction.second)
-            if (maze.maze.getValue(next) == '#' && (path.contains(next2) || maze.endPos == next2) ) {
-                result.add(next)
+            if (maze.maze.getValue(next) == '#' && path.contains(next2)) {
+                result.add(Pair(next, next2))
             }
         }
         return result
     }
 
-    fun getMazeWithCheat(cheat: Pair<Int, Int>, maze: Maze): Maze {
-        val mazeWithCheat =  mutableMapOf<Pair<Int, Int>, Char>()
-        for ((i, j) in maze.maze.keys) {
-            if (i == cheat.first && j == cheat.second) {
-                mazeWithCheat[cheat] = '.'
-            } else {
-                mazeWithCheat[i to j] = maze.maze.getValue(i to j)
-            }
-        }
-        return Maze(mazeWithCheat, maze.startPos, maze.endPos, maze.maxRow, maze.maxCol)
-    }
-
     fun part1(input: List<String>): Int {
-
         val maze = parseMaze(input)
 
         val (shortestPath, path) = getShortestPath(maze.startPos, maze.endPos, maze.maze)
@@ -116,31 +105,65 @@ fun main() {
         val cheatBenefits: MutableList<Int> = mutableListOf()
         val checkedCheats: MutableSet<Pair<Int, Int>> = mutableSetOf()
         for (pos in path) {
+            if (pos == maze.endPos) continue
             val cheats = getCheats(pos, path, maze)
             for (cheat in cheats) {
-                if (checkedCheats.contains(cheat)) continue
-                checkedCheats.add(cheat)
-                val mazeWithCheat = getMazeWithCheat(cheat, maze)
-                val (cheatShortestPath, _) = getShortestPath(mazeWithCheat.startPos, mazeWithCheat.endPos, mazeWithCheat.maze)
-                if (shortestPath - cheatShortestPath > 0) {
-                    cheatBenefits.add(shortestPath - cheatShortestPath)
-                }
+                val (cheatSkip, cheatExit) = cheat
+                if (checkedCheats.contains(cheatSkip)) continue
+                checkedCheats.add(cheatSkip)
+
+                val cut = path.indexOf(cheatExit) - path.indexOf(pos)
+                val pathLengthWithCheat = path.size - cut
+
+                if (pathLengthWithCheat < shortestPath) cheatBenefits.add(shortestPath - pathLengthWithCheat)
             }
         }
 
         return cheatBenefits.count { it >= 100 }
     }
 
-    fun part2(input: List<String>): Long {
-       return 0
+    fun part2(input: List<String>): Int {
+        val maze = parseMaze(input)
+
+        val (shortestPath, path) = getShortestPath(maze.startPos, maze.endPos, maze.maze)
+
+        val cheatBenefits: MutableList<Int> = mutableListOf()
+        val checkedCheats: MutableSet<Pair<Pair<Int, Int>, Pair<Int, Int>>> = mutableSetOf()
+
+        for ((ind, currentPos) in path.withIndex()) {
+            val cheats = mutableSetOf<Pair<Int, Int>>()
+            for (i in -20 .. 20) {
+                for (j in -20 .. 20) {
+                    val exitPoint = Pair(currentPos.first + i, currentPos.second + j)
+                    if (path.contains(exitPoint) && exitPoint != currentPos && abs(i) + abs(j) <= 20) cheats.add(exitPoint)
+                }
+            }
+
+            for (cheat in cheats) {
+                if (checkedCheats.contains(Pair(currentPos, cheat))) continue
+                checkedCheats.add(Pair(currentPos, cheat))
+
+                val cut = path.indexOf(cheat) - ind
+                val add = abs(cheat.first - currentPos.first) + abs(cheat.second - currentPos.second)
+                val pathLengthWithCheat = (path.size - 1 - cut) + add
+
+                if (pathLengthWithCheat < shortestPath) {
+                    cheatBenefits.add(shortestPath - pathLengthWithCheat)
+                }
+            }
+        }
+
+        //val a = cheatBenefits.filter { it >= 50}.groupBy { it }.mapValues { it.value.size }.toSortedMap()
+
+        return cheatBenefits.count { it >= 100 }
     }
 
     val testInput = readInput("Day20_test")
     check(part1(testInput) == 0)
-    //check(part2(testInput) == 16L)
+    check(part2(testInput) == 0)
 
 
     val input = readInput("Day20")
     part1(input).println()
-    //part2(input).println()
+    part2(input).println()
 }
