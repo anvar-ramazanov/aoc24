@@ -80,15 +80,20 @@ fun main() {
         return shortestPaths
     }
 
-    fun getTransformedLengthOnDepth(path: String, currentDepth: Int, maxDepth: Int): Int {
+    val cacheTransformedLength = mutableMapOf<Triple<String, Int, Int>, Long>()
+
+    fun getTransformedLengthOnDepth(path: String, currentDepth: Int, maxDepth: Int): Long {
+        val cacheKey = Triple(path, currentDepth, maxDepth)
+        cacheTransformedLength[cacheKey]?.let { return it }
+
         var prev = getDirectionalPosition('A')
-        var result = 0
+        var result = 0L
 
         for (c in path) {
             val curr = getDirectionalPosition(c)
 
             val paths = findShortestPath(prev, curr, Pair(0, 0), 3, 2)
-            var min = Integer.MAX_VALUE
+            var min = Long.MAX_VALUE
 
             if (currentDepth < maxDepth) {
                 for (path in paths) {
@@ -98,24 +103,25 @@ fun main() {
                     }
                 }
             } else if (currentDepth == maxDepth) {
-                min = paths.minOf { it.length }
+                min = paths.minOf { it.length }.toLong()
             }
             result += min
             prev = curr
         }
 
+        cacheTransformedLength[cacheKey] = result
         return result
     }
 
-    fun getCodeLength(code: String, maxDepth: Int): Int {
+    fun getCodeLength(code: String, maxDepth: Int): Long {
         var prev = getNumericPosition('A')
-        var result = 0
+        var result = 0L
 
         for (s in code) {
             val curr = getNumericPosition(s)
             val numericPaths = findShortestPath(prev, curr, Pair(3, 0), 3, 4)
 
-            var min = Integer.MAX_VALUE
+            var min = Long.MAX_VALUE
             for (path in numericPaths) {
                 val pp = getTransformedLengthOnDepth(path, 1, maxDepth)
                 if (pp < min) {
@@ -140,8 +146,8 @@ fun main() {
         return sb.toString().toInt()
     }
 
-    fun part1(input: List<String>): Int {
-        var result = 0
+    fun part1(input: List<String>): Long {
+        var result = 0L
         val codes = input.map { it.trim() }.toList()
         for (code in codes) {
             val length = getCodeLength(code, 2)
@@ -151,11 +157,11 @@ fun main() {
         return result
     }
 
-    fun part2(input: List<String>): Int {
-        var result = 0
+    fun part2(input: List<String>): Long {
+        var result = 0L
         val codes = input.map { it.trim() }.toList()
         for (code in codes) {
-            val length = getCodeLength(code, 10)
+            val length = getCodeLength(code, 25)
             result += (length * getNumberFromCode(code))
         }
 
@@ -163,7 +169,7 @@ fun main() {
     }
 
     val testInput = readInput("Day21_test")
-    check(part1(testInput) == 126384)
+    check(part1(testInput) == 126384L)
     //check(part2(testInput) == 0)
 
 
